@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎤 ล่าคำสัมผัส</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Mali:wght@400;600;800&family=Sriracha&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --pink:#ff6fa5; --purple:#9b6bff; --blue:#5ec8ff; --yellow:#ffd166; --green:#5bd99c; --red:#ff5d6c;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:'Mali',sans-serif;}
+  #app{position:fixed;inset:0;width:100%;height:100%;}
+
+  .bg{
+    position:fixed;inset:0;z-index:0;
+    background:linear-gradient(180deg,#7ec8ff 0%,#a98bff 55%,#c79bff 100%);
+    overflow:hidden;
+  }
+  .cloud{position:absolute;background:rgba(255,255,255,.85);border-radius:50%;filter:blur(1px);opacity:.9;}
+  .star{position:absolute;color:#fff;opacity:.8;font-size:18px;}
+
+  .screen{position:fixed;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;}
+  .screen.active{display:flex;}
+
+  h1.title{font-family:'Sriracha',cursive;font-size:clamp(28px,8vw,48px);color:#fff;text-shadow:3px 3px 0 #b14fa0, 0 0 10px rgba(0,0,0,.15);margin:6px 0;}
+  .subtitle{color:#fff;font-size:18px;text-shadow:1px 1px 3px rgba(0,0,0,.25);margin:2px 0 18px;}
+
+  .card{
+    background:rgba(255,255,255,.92);
+    border-radius:28px;
+    padding:24px 22px;
+    box-shadow:0 10px 30px rgba(0,0,0,.2);
+    max-width:420px;width:100%;
+  }
+  input[type=text], input[type=number]{
+    width:100%;padding:12px 14px;border-radius:14px;border:3px solid var(--purple);
+    font-family:'Mali',sans-serif;font-size:18px;outline:none;margin:6px 0;background:#fff7fb;
+  }
+  select{width:100%;padding:12px 14px;border-radius:14px;border:3px solid var(--purple);font-family:'Mali',sans-serif;font-size:18px;background:#fff7fb;margin:6px 0;}
+  label{display:block;text-align:left;font-weight:600;color:#6b3fa0;margin-top:10px;font-size:15px;}
+
+  .btn{
+    display:inline-block;border:none;cursor:pointer;border-radius:50px;
+    padding:14px 28px;font-family:'Mali',sans-serif;font-weight:800;font-size:18px;color:#fff;
+    box-shadow:0 6px 0 rgba(0,0,0,.18);margin:8px 6px;transition:transform .08s;
+  }
+  .btn:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.18);}
+  .btn-pink{background:linear-gradient(180deg,#ff8fc0,var(--pink));}
+  .btn-blue{background:linear-gradient(180deg,#8fe0ff,var(--blue));}
+  .btn-purple{background:linear-gradient(180deg,#bb9bff,var(--purple));}
+  .btn-green{background:linear-gradient(180deg,#8fe9bd,var(--green));}
+  .btn-yellow{background:linear-gradient(180deg,#ffe199,var(--yellow));color:#7a5200;}
+  .btn-red{background:linear-gradient(180deg,#ff8f9a,var(--red));}
+  .btn-small{padding:8px 16px;font-size:14px;border-radius:30px;}
+
+  /* ===== GAME SCREEN ===== */
+  #gameScreen{padding:0;}
+  #hud{
+    position:fixed;top:0;left:0;right:0;z-index:50;pointer-events:none;
+    display:flex;justify-content:space-between;align-items:flex-start;padding:10px 14px;
+  }
+  .hud-pill{
+    pointer-events:none;background:rgba(255,255,255,.92);border-radius:20px;padding:8px 16px;
+    font-weight:800;color:#6b3fa0;box-shadow:0 4px 10px rgba(0,0,0,.15);font-size:15px;
+  }
+  #comboPill{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:50;
+    background:linear-gradient(180deg,#ffd166,#ff9f43);color:#7a3a00;font-weight:800;
+    padding:6px 18px;border-radius:30px;box-shadow:0 4px 10px rgba(0,0,0,.2);
+    pointer-events:none;opacity:0;transition:opacity .2s,transform .2s;font-size:14px;}
+  #comboPill.show{opacity:1;transform:translateX(-50%) scale(1.1);}
+
+  #targetBar{
+    position:fixed;top:112px;left:50%;transform:translateX(-50%);z-index:50;pointer-events:none;
+    background:linear-gradient(180deg,#fff,#fef0ff);border-radius:24px;padding:10px 28px;
+    box-shadow:0 6px 16px rgba(0,0,0,.2);text-align:center;border:3px solid #fff;
+  }
+  #targetLabel{font-size:13px;color:#9b6bff;font-weight:700;}
+  #targetWord{font-family:'Sriracha',cursive;font-size:30px;color:#ff5d8f;line-height:1.1;}
+
+  #bubbleArea{
+    position:fixed;inset:0;z-index:20;touch-action:none;
+  }
+  .bubble{
+    position:absolute;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Mali',sans-serif;font-weight:800;color:#fff;
+    text-shadow:1px 1px 2px rgba(0,0,0,.25);
+    box-shadow:inset -6px -6px 12px rgba(0,0,0,.12), inset 6px 6px 10px rgba(255,255,255,.4), 0 4px 10px rgba(0,0,0,.15);
+    touch-action:none;cursor:pointer;
+  }
+
+  #countdownOverlay{
+    position:fixed;inset:0;z-index:60;background:rgba(60,30,90,.55);
+    display:none;align-items:center;justify-content:center;pointer-events:none;
+  }
+  #countdownOverlay.show{display:flex;}
+  #countdownNum{font-family:'Sriracha',cursive;font-size:120px;color:#fff;text-shadow:0 0 30px rgba(255,255,255,.7);}
+
+  #pauseBtn{position:fixed;top:10px;left:14px;z-index:55;pointer-events:auto;}
+
+  .resultGrade{font-family:'Sriracha',cursive;font-size:60px;margin:6px 0;}
+  .stars{font-size:34px;margin:6px 0;letter-spacing:4px;}
+  .statRow{display:flex;justify-content:space-between;font-size:16px;color:#5a3a8a;padding:4px 8px;border-bottom:1px dashed #d9c6ff;}
+
+  table.lb{width:100%;border-collapse:collapse;font-size:14px;}
+  table.lb th{color:#6b3fa0;padding:6px;border-bottom:2px solid #d9c6ff;}
+  table.lb td{padding:6px;text-align:center;border-bottom:1px solid #eee0ff;}
+
+  .pairRow{display:flex;gap:4px;align-items:center;margin:4px 0;background:#f7f0ff;border-radius:12px;padding:6px;}
+  .pairRow input{margin:0;font-size:14px;padding:8px;}
+  .small{font-size:12px;color:#888;}
+
+  .shake{animation:shakeOnce .35s;}
+  @keyframes shakeOnce{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-8px);}
+    40%{transform:translateX(8px);}
+    60%{transform:translateX(-6px);}
+    80%{transform:translateX(6px);}
+  }
+  .scrollBox{max-height:60vh;overflow-y:auto;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="bg" id="bgLayer"></div>
+
+  <!-- HOME -->
+  <div class="screen active" id="homeScreen">
+    <h1 class="title" id="gameTitleHome">🎤 ล่าคำสัมผัส</h1>
+    <div class="subtitle" id="homeTeacherSchool">คุณครู • โรงเรียน</div>
+    <div class="card">
+      <label>ชื่อนักเรียน</label>
+      <input type="text" id="studentNameInput" placeholder="พิมพ์ชื่อของหนู...">
+      <div style="margin-top:14px;">
+        <button class="btn btn-pink" onclick="goPlay()">▶️ เริ่มเล่น</button>
+        <button class="btn btn-blue" onclick="showScreen('leaderboardScreen'); renderLeaderboard();">🏆 อันดับคะแนน</button>
+        <button class="btn btn-purple" onclick="showScreen('settingsScreen'); renderSettings();">⚙️ ตั้งค่า</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="gameScreen">
+    <div id="hud">
+      <div class="hud-pill">⏱ <span id="timeLeft">60</span> วิ</div>
+      <div class="hud-pill">⭐ <span id="scoreVal">0</span> คะแนน</div>
+    </div>
+    <button class="btn btn-yellow btn-small" id="pauseBtn" onclick="togglePause()">⏸</button>
+    <div id="comboPill">🔥 Combo x<span id="comboVal">2</span></div>
+    <div id="targetBar">
+      <div id="targetLabel">คำว่า</div>
+      <div id="targetWord">นา</div>
+    </div>
+    <div id="bubbleArea"></div>
+    <div id="countdownOverlay"><div id="countdownNum">3</div></div>
+  </div>
+
+  <!-- RESULT -->
+  <div class="screen" id="resultScreen">
+    <div class="card" id="resultCard">
+      <h1 class="title" style="font-size:26px;" id="resultGameTitle">🎤 ล่าคำสัมผัส</h1>
+      <div class="resultGrade" id="resultGrade">A</div>
+      <div class="stars" id="resultStars">⭐⭐⭐</div>
+      <div class="statRow"><span>ชื่อนักเรียน</span><b id="resultStudent">-</b></div>
+      <div class="statRow"><span>คะแนนรวม</span><b id="resultScore">0</b></div>
+      <div class="statRow"><span>ตอบถูก</span><b id="resultCorrect">0</b></div>
+      <div class="statRow"><span>ตอบผิด</span><b id="resultWrong">0</b></div>
+      <div class="statRow"><span>คอมโบสูงสุด</span><b id="resultMaxCombo">0</b></div>
+      <div class="statRow"><span>คุณครู</span><b id="resultTeacher">-</b></div>
+      <div class="statRow"><span>โรงเรียน</span><b id="resultSchool">-</b></div>
+      <div class="statRow"><span>วันที่</span><b id="resultDate">-</b></div>
+      <div style="margin-top:16px;">
+        <button class="btn btn-pink" onclick="goPlay()">🔁 เล่นอีกครั้ง</button>
+        <button class="btn btn-green" onclick="saveAsImage()">📸 บันทึกรูป</button>
+        <button class="btn btn-blue" onclick="showScreen('leaderboardScreen'); renderLeaderboard();">🏆 อันดับ</button>
+        <button class="btn btn-purple" onclick="showScreen('homeScreen')">🏠 หน้าแรก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="screen" id="leaderboardScreen">
+    <div class="card">
+      <h1 class="title" style="font-size:24px;">🏆 ตารางคะแนน</h1>
+      <div class="scrollBox"><table class="lb" id="leaderboardTable"></table></div>
+      <div style="margin-top:14px;">
+        <button class="btn btn-purple" onclick="showScreen('homeScreen')">🏠 กลับหน้าแรก</button>
+        <button class="btn btn-red btn-small" onclick="clearLeaderboard()">🗑 ล้างคะแนน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="screen" id="settingsScreen">
+    <div class="card" style="max-width:480px;">
+      <h1 class="title" style="font-size:24px;">⚙️ ตั้งค่า (คุณครู)</h1>
+      <div class="scrollBox" style="text-align:left;">
+        <label>ชื่อเกม</label>
+        <input type="text" id="setGameName">
+        <label>ชื่อคุณครู</label>
+        <input type="text" id="setTeacher">
+        <label>ชื่อโรงเรียน</label>
+        <input type="text" id="setSchool">
+        <label>เวลาเล่น (วินาที)</label>
+        <input type="number" id="setDuration" min="20" max="300">
+        <label>จำนวนฟองในจอ</label>
+        <input type="number" id="setMaxBubbles" min="3" max="12">
+        <label>ระดับความยาก</label>
+        <select id="setDifficulty">
+          <option value="easy">ง่าย</option>
+          <option value="normal">ปกติ</option>
+          <option value="hard">ยาก</option>
+        </select>
+        <label>เสียงประกอบ</label>
+        <select id="setSound">
+          <option value="on">เปิดเสียง</option>
+          <option value="off">ปิดเสียง</option>
+        </select>
+
+        <h3 style="color:#6b3fa0;margin-top:18px;">🔤 คู่คำคล้องจอง</h3>
+        <div id="pairsList"></div>
+        <button class="btn btn-green btn-small" onclick="addPairRow()">➕ เพิ่มคู่คำ</button>
+      </div>
+      <div style="margin-top:14px;">
+        <button class="btn btn-pink" onclick="saveSettings()">💾 บันทึก</button>
+        <button class="btn btn-purple" onclick="showScreen('homeScreen')">🏠 กลับหน้าแรก</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+/* ============ STORAGE KEYS ============ */
+const LS_SETTINGS = 'rhymeGame_settings_v1';
+const LS_PAIRS = 'rhymeGame_pairs_v1';
+const LS_LEADERBOARD = 'rhymeGame_leaderboard_v1';
+
+/* ============ DEFAULT DATA ============ */
+const DEFAULT_SETTINGS = {
+  gameName: '🎤 ล่าคำสัมผัส',
+  teacher: 'คุณครู',
+  school: 'โรงเรียนของเรา',
+  duration: 60,
+  maxBubbles: 6,
+  difficulty: 'normal',
+  sound: 'on'
+};
+
+const DEFAULT_PAIRS = [
+  {target:'นา', good:['ตา','ปลา','มา','ฟ้า'], bad:['หมา','บ้าน','รถ','แมว']},
+  {target:'ใจ', good:['ไป','ไม้','ใหม่','ไหน'], bad:['บ้าน','โต๊ะ','เก้าอี้','หนังสือ']},
+  {target:'ดาว', good:['ขาว','หนาว','ยาว'], bad:['แดง','เขียว','ฟ้า','ดำ']},
+  {target:'มือ', good:['คือ','ลือ','ถือ'], bad:['เท้า','หู','ตา','จมูก']},
+  {target:'เดิน', good:['เนิน','เทิน','เชิน'], bad:['วิ่ง','นั่ง','นอน','ยืน']},
+  {target:'ดิน', good:['หิน','ถิ่น','กิน','บิน'], bad:['น้ำ','ลม','ไฟ','ฝน']},
+  {target:'รัก', good:['ภัก','จัก','ลัก'], bad:['เกลียด','โกรธ','กลัว','เบื่อ']},
+  {target:'แมว', good:['แล้ว','แก้ว','แห้ว'], bad:['หมา','วัว','ไก่','เป็ด']}
+];
+
+/* JSON clone helper (no structuredClone per spec) */
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+
+/* ============ STATE ============ */
+let settings = loadSettings();
+let pairs = loadPairs();
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(LS_SETTINGS);
+    if(!raw) return clone(DEFAULT_SETTINGS);
+    const parsed = JSON.parse(raw);
+    return Object.assign(clone(DEFAULT_SETTINGS), parsed);
+  }catch(e){ return clone(DEFAULT_SETTINGS); }
+}
+function loadPairs(){
+  try{
+    const raw = localStorage.getItem(LS_PAIRS);
+    if(!raw) return clone(DEFAULT_PAIRS);
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed) && parsed.length>0) return parsed;
+    return clone(DEFAULT_PAIRS);
+  }catch(e){ return clone(DEFAULT_PAIRS); }
+}
+function persistSettings(){ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }
+function persistPairs(){ localStorage.setItem(LS_PAIRS, JSON.stringify(pairs)); }
+function loadLeaderboard(){
+  try{
+    const raw = localStorage.getItem(LS_LEADERBOARD);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function persistLeaderboard(lb){ localStorage.setItem(LS_LEADERBOARD, JSON.stringify(lb)); }
+
+/* ============ SCREEN NAV ============ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function applyBranding(){
+  const title = settings.gameName || DEFAULT_SETTINGS.gameName;
+  document.getElementById('gameTitleHome').textContent = title;
+  document.getElementById('resultGameTitle').textContent = title;
+  document.title = title;
+  document.getElementById('homeTeacherSchool').textContent = (settings.teacher||'') + ' • ' + (settings.school||'');
+}
+
+/* ============ BACKGROUND DECOR ============ */
+function buildBackground(){
+  const bg = document.getElementById('bgLayer');
+  bg.innerHTML='';
+  for(let i=0;i<6;i++){
+    const c=document.createElement('div');
+    c.className='cloud';
+    const w = 60+Math.random()*100;
+    c.style.width=w+'px'; c.style.height=(w*0.5)+'px';
+    c.style.left=(Math.random()*90)+'%';
+    c.style.top=(Math.random()*60)+'%';
+    bg.appendChild(c);
+  }
+  for(let i=0;i<14;i++){
+    const s=document.createElement('div');
+    s.className='star'; s.textContent='✦';
+    s.style.left=(Math.random()*95)+'%';
+    s.style.top=(Math.random()*90)+'%';
+    s.style.opacity = (0.3+Math.random()*0.6).toFixed(2);
+    bg.appendChild(s);
+  }
+}
+
+/* ============ AUDIO ============ */
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx=null; }
+  }
+}
+function beep(freq, dur, type){
+  if(settings.sound==='off' || !audioCtx) return;
+  try{
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type||'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+dur);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime+dur);
+  }catch(e){}
+}
+function playCorrect(){ beep(740,0.18,'triangle'); setTimeout(()=>beep(988,0.16,'triangle'),80); }
+function playWrong(){ beep(180,0.25,'sawtooth'); }
+document.addEventListener('pointerdown', ()=>{ ensureAudio(); }, {once:true});
+
+/* ============ GAME STATE ============ */
+let gameRunning = false;
+let gamePaused = false;
+let bubbles = [];
+let bubbleIdCounter = 0;
+let score = 0;
+let combo = 0;
+let comboMult = 1;
+let correctCount = 0;
+let wrongCount = 0;
+let maxCombo = 0;
+let timeLeft = 60;
+let timerInterval = null;
+let spawnInterval = null;
+let currentPairIndex = 0;
+let rafId = null;
+let difficultyConf = { speedMin:0.3, speedMax:0.5, badRatio:0.5 };
+
+function setDifficultyConf(){
+  const d = settings.difficulty;
+  if(d==='easy') difficultyConf = {speedMin:0.25, speedMax:0.4, badRatio:0.35};
+  else if(d==='hard') difficultyConf = {speedMin:0.5, speedMax:0.7, badRatio:0.65};
+  else difficultyConf = {speedMin:0.35, speedMax:0.55, badRatio:0.5};
+}
+
+function goPlay(){
+  const nameInput = document.getElementById('studentNameInput');
+  window.currentStudent = (nameInput.value||'').trim() || 'นักเรียน';
+  showScreen('gameScreen');
+  setDifficultyConf();
+  startCountdown();
+}
+
+function startCountdown(){
+  const overlay = document.getElementById('countdownOverlay');
+  const num = document.getElementById('countdownNum');
+  overlay.classList.add('show');
+  let n = 3;
+  num.textContent = n;
+  const iv = setInterval(()=>{
+    n--;
+    if(n>0){ num.textContent = n; }
+    else if(n===0){ num.textContent = 'เริ่ม!'; }
+    else{
+      clearInterval(iv);
+      overlay.classList.remove('show');
+      startGame();
+    }
+  },700);
+}
+
+function pickNewTarget(){
+  currentPairIndex = Math.floor(Math.random()*pairs.length);
+  const p = pairs[currentPairIndex];
+  document.getElementById('targetWord').textContent = p.target;
+}
+
+function startGame(){
+  score=0; combo=0; comboMult=1; correctCount=0; wrongCount=0; maxCombo=0;
+  timeLeft = settings.duration || 60;
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('timeLeft').textContent = timeLeft;
+  document.getElementById('comboPill').classList.remove('show');
+  bubbles = [];
+  document.getElementById('bubbleArea').innerHTML = '';
+  pickNewTarget();
+
+  gameRunning = true;
+  gamePaused = false;
+
+  spawnBubble();
+  spawnInterval = setInterval(()=>{
+    if(!gamePaused && gameRunning){
+      const maxB = settings.maxBubbles || 6;
+      if(bubbles.length < maxB) spawnBubble();
+    }
+  }, 1100);
+
+  timerInterval = setInterval(()=>{
+    if(!gamePaused && gameRunning){
+      timeLeft--;
+      document.getElementById('timeLeft').textContent = Math.max(timeLeft,0);
+      if(timeLeft<=0){ endGame(); }
+    }
+  },1000);
+
+  rafId = requestAnimationFrame(moveBubbles);
+}
+
+function moveBubbles(){
+  if(!gameRunning){ return; }
+  if(!gamePaused){
+    for(let i=bubbles.length-1;i>=0;i--){
+      const b = bubbles[i];
+      b.y -= b.speed;
+      b.el.style.top = b.y + 'px';
+      if(b.y < -b.size){
+        b.el.remove();
+        bubbles.splice(i,1);
+      }
+    }
+  }
+  requestAnimationFrame(moveBubbles);
+}
+
+function spawnBubble(){
+  const area = document.getElementById('bubbleArea');
+  const p = pairs[currentPairIndex];
+  if(!p) return;
+  const isGood = Math.random() > difficultyConf.badRatio;
+  let word;
+  if(isGood && p.good && p.good.length>0){
+    word = p.good[Math.floor(Math.random()*p.good.length)];
+  } else if(p.bad && p.bad.length>0){
+    word = p.bad[Math.floor(Math.random()*p.bad.length)];
+  } else {
+    word = p.good[Math.floor(Math.random()*p.good.length)];
+  }
+  const isCorrect = (p.good && p.good.includes(word));
+
+  const size = 64 + Math.random()*26;
+  const innerW = window.innerWidth;
+  const left = Math.random()*(innerW - size);
+  const top = window.innerHeight + size;
+  const speed = difficultyConf.speedMin + Math.random()*(difficultyConf.speedMax - difficultyConf.speedMin);
+
+  const colors = ['#ff8fc0,#ff5d8f','#8fe0ff,#3aa8e0','#bb9bff,#8a5cf6','#8fe9bd,#3bc486','#ffe199,#ffb238'];
+  const colorPair = colors[Math.floor(Math.random()*colors.length)];
+
+  const el = document.createElement('div');
+  el.className = 'bubble';
+  el.style.width = size+'px';
+  el.style.height = size+'px';
+  el.style.left = left+'px';
+  el.style.top = top+'px';
+  el.style.background = 'radial-gradient(circle at 35% 30%, '+colorPair.split(',')[0]+', '+colorPair.split(',')[1]+')';
+  el.style.fontSize = Math.max(14, size*0.26)+'px';
+  el.textContent = word;
+
+  const bubbleObj = { id: bubbleIdCounter++, el, y: top, x:left, size, speed, isCorrect, word };
+
+  el.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    onBubbleTap(bubbleObj);
+  }, {passive:false});
+
+  area.appendChild(el);
+  bubbles.push(bubbleObj);
+}
+
+function removeBubble(bubbleObj){
+  const idx = bubbles.findIndex(b=>b.id===bubbleObj.id);
+  if(idx>-1){
+    bubbles[idx].el.remove();
+    bubbles.splice(idx,1);
+  }
+}
+
+function onBubbleTap(bubbleObj){
+  if(!gameRunning || gamePaused) return;
+  if(bubbleObj.popped) return;
+  bubbleObj.popped = true;
+
+  if(bubbleObj.isCorrect){
+    combo++;
+    if(combo>maxCombo) maxCombo = combo;
+    comboMult = combo>=8 ? 4 : combo>=5 ? 3 : combo>=2 ? 2 : 1;
+    const gained = 10 * comboMult;
+    score += gained;
+    correctCount++;
+    playCorrect();
+    popEffect(bubbleObj, true);
+    if(comboMult>1){
+      const pill = document.getElementById('comboPill');
+      document.getElementById('comboVal').textContent = comboMult;
+      pill.classList.add('show');
+      clearTimeout(window._comboTO);
+      window._comboTO = setTimeout(()=>pill.classList.remove('show'), 900);
+    }
+  } else {
+    combo = 0; comboMult = 1;
+    score = Math.max(0, score - 5);
+    wrongCount++;
+    playWrong();
+    popEffect(bubbleObj, false);
+    document.getElementById('gameScreen').classList.add('shake');
+    setTimeout(()=>document.getElementById('gameScreen').classList.remove('shake'), 350);
+  }
+  document.getElementById('scoreVal').textContent = score;
+  removeBubble(bubbleObj);
+
+  const maxB = settings.maxBubbles || 6;
+  if(bubbles.length < maxB && gameRunning){ spawnBubble(); }
+}
+
+function popEffect(bubbleObj, good){
+  const el = bubbleObj.el;
+  el.style.transition = 'transform .18s, opacity .18s';
+  el.style.transform = 'scale(1.5)';
+  el.style.opacity = '0';
+  el.style.pointerEvents = 'none';
+  el.style.boxShadow = good ? '0 0 30px 8px #ffe88a' : '0 0 20px 6px #ff8a8a';
+}
+
+function togglePause(){
+  if(!gameRunning) return;
+  gamePaused = !gamePaused;
+  document.getElementById('pauseBtn').textContent = gamePaused ? '▶️' : '⏸';
+}
+
+function endGame(){
+  gameRunning = false;
+  clearInterval(timerInterval);
+  clearInterval(spawnInterval);
+  timerInterval = null; spawnInterval = null;
+
+  const total = correctCount + wrongCount;
+  const accuracy = total>0 ? correctCount/total : 0;
+  let grade='C', stars='⭐';
+  if(score>=200 && accuracy>=0.85){ grade='S'; stars='⭐⭐⭐'; }
+  else if(score>=120 && accuracy>=0.7){ grade='A'; stars='⭐⭐⭐'; }
+  else if(score>=70 && accuracy>=0.5){ grade='B'; stars='⭐⭐'; }
+  else { grade='C'; stars='⭐'; }
+
+  document.getElementById('resultGrade').textContent = grade;
+  document.getElementById('resultStars').textContent = stars;
+  document.getElementById('resultStudent').textContent = window.currentStudent||'นักเรียน';
+  document.getElementById('resultScore').textContent = score;
+  document.getElementById('resultCorrect').textContent = correctCount;
+  document.getElementById('resultWrong').textContent = wrongCount;
+  document.getElementById('resultMaxCombo').textContent = maxCombo;
+  document.getElementById('resultTeacher').textContent = settings.teacher;
+  document.getElementById('resultSchool').textContent = settings.school;
+  document.getElementById('resultDate').textContent = thaiDate();
+
+  saveScoreToLeaderboard({
+    name: window.currentStudent||'นักเรียน',
+    score, correct: correctCount, wrong: wrongCount, maxCombo,
+    date: thaiDate()
+  });
+
+  showScreen('resultScreen');
+}
+
+function thaiDate(){
+  const d = new Date();
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const buddhistYear = d.getFullYear()+543;
+  return d.getDate()+' '+months[d.getMonth()]+' '+buddhistYear;
+}
+
+/* ============ LEADERBOARD ============ */
+function saveScoreToLeaderboard(entry){
+  const lb = loadLeaderboard();
+  lb.push(entry);
+  lb.sort((a,b)=>b.score-a.score);
+  persistLeaderboard(lb.slice(0,50));
+}
+function renderLeaderboard(){
+  const lb = loadLeaderboard().slice().sort((a,b)=>b.score-a.score).slice(0,10);
+  const table = document.getElementById('leaderboardTable');
+  let html = '<tr><th>#</th><th>ชื่อ</th><th>คะแนน</th><th>วันที่</th></tr>';
+  if(lb.length===0){
+    html += '<tr><td colspan="4">ยังไม่มีคะแนน ลองเล่นดูสิ!</td></tr>';
+  } else {
+    lb.forEach((e,i)=>{
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      html += `<tr><td>${medal}</td><td>${escapeHtml(e.name)}</td><td>${e.score}</td><td>${e.date}</td></tr>`;
+    });
+  }
+  table.innerHTML = html;
+}
+function clearLeaderboard(){
+  if(confirm('ล้างตารางคะแนนทั้งหมดหรือไม่?')){
+    persistLeaderboard([]);
+    renderLeaderboard();
+  }
+}
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ============ SETTINGS UI ============ */
+function renderSettings(){
+  document.getElementById('setGameName').value = settings.gameName;
+  document.getElementById('setTeacher').value = settings.teacher;
+  document.getElementById('setSchool').value = settings.school;
+  document.getElementById('setDuration').value = settings.duration;
+  document.getElementById('setMaxBubbles').value = settings.maxBubbles;
+  document.getElementById('setDifficulty').value = settings.difficulty;
+  document.getElementById('setSound').value = settings.sound;
+  renderPairsList();
+}
+
+function renderPairsList(){
+  const wrap = document.getElementById('pairsList');
+  wrap.innerHTML = '';
+  pairs.forEach((p, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'pairRow';
+    row.innerHTML = `
+      <div style="flex:1;">
+        <input type="text" data-idx="${idx}" data-field="target" value="${escapeHtml(p.target)}" placeholder="คำโจทย์">
+      </div>
+      <div style="flex:2;">
+        <input type="text" data-idx="${idx}" data-field="good" value="${escapeHtml(p.good.join(','))}" placeholder="คำถูก (คั่นด้วย ,)">
+      </div>
+      <div style="flex:2;">
+        <input type="text" data-idx="${idx}" data-field="bad" value="${escapeHtml(p.bad.join(','))}" placeholder="คำลวง (คั่นด้วย ,)">
+      </div>
+      <button class="btn btn-red btn-small" style="margin:0;" data-del="${idx}">✕</button>
+    `;
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', (e)=>{
+      const idx = +e.target.dataset.idx;
+      const field = e.target.dataset.field;
+      if(field==='target'){ pairs[idx].target = e.target.value; }
+      else if(field==='good'){ pairs[idx].good = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); }
+      else if(field==='bad'){ pairs[idx].bad = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); }
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const idx = +e.target.dataset.del;
+      pairs.splice(idx,1);
+      renderPairsList();
+    });
+  });
+}
+
+function addPairRow(){
+  pairs.push({target:'คำใหม่', good:['คำ1','คำ2'], bad:['คำลวง1','คำลวง2']});
+  renderPairsList();
+}
+
+function saveSettings(){
+  settings.gameName = document.getElementById('setGameName').value.trim() || DEFAULT_SETTINGS.gameName;
+  settings.teacher = document.getElementById('setTeacher').value.trim() || DEFAULT_SETTINGS.teacher;
+  settings.school = document.getElementById('setSchool').value.trim() || DEFAULT_SETTINGS.school;
+  settings.duration = Math.max(20, Math.min(300, parseInt(document.getElementById('setDuration').value)||60));
+  settings.maxBubbles = Math.max(3, Math.min(12, parseInt(document.getElementById('setMaxBubbles').value)||6));
+  settings.difficulty = document.getElementById('setDifficulty').value;
+  settings.sound = document.getElementById('setSound').value;
+
+  if(pairs.length===0){ pairs = clone(DEFAULT_PAIRS); }
+  pairs.forEach(p=>{
+    if(!p.target) p.target='คำ';
+    if(!Array.isArray(p.good) || p.good.length===0) p.good=['คำ'];
+    if(!Array.isArray(p.bad)) p.bad=[];
+  });
+
+  persistSettings();
+  persistPairs();
+  applyBranding();
+  alert('บันทึกการตั้งค่าเรียบร้อยแล้ว ✅');
+  showScreen('homeScreen');
+}
+
+/* ============ SAVE AS IMAGE ============ */
+function saveAsImage(){
+  if(typeof html2canvas === 'undefined'){
+    alert('ไม่สามารถโหลดเครื่องมือบันทึกรูปภาพได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่');
+    return;
+  }
+  const card = document.getElementById('resultCard');
+  html2canvas(card, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    const link = document.createElement('a');
+    link.download = 'ผลคะแนน_' + (window.currentStudent||'นักเรียน') + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }).catch(()=>{
+    alert('เกิดข้อผิดพลาดในการบันทึกรูปภาพ กรุณาลองใหม่อีกครั้ง');
+  });
+}
+
+/* ============ RESIZE HANDLING ============ */
+window.addEventListener('resize', ()=>{
+  bubbles.forEach(b=>{
+    const maxLeft = Math.max(0, window.innerWidth - b.size);
+    if(b.x > maxLeft){ b.x = maxLeft; b.el.style.left = b.x+'px'; }
+  });
+});
+
+/* ============ INIT ============ */
+applyBranding();
+buildBackground();
+renderLeaderboard();
+</script>
+</body>
+</html>
